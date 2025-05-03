@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Tracking</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+  <style>
+    body { background: #f4f6f8; padding: 30px; }
+    .container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .status { font-weight: bold; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2 class="text-center mb-4">Track Your Orders</h2>
+  <input type="email" id="email" class="form-control mb-3" placeholder="Enter your email" />
+  <button class="btn btn-primary mb-4" onclick="trackOrders()">Track</button>
+  <table class="table table-bordered">
+    <thead class="thead-dark">
+      <tr>
+        <th>Product</th>
+        <th>Qty</th>
+        <th>Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="ordersTableBody"></tbody>
+  </table>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+  const app = initializeApp({
+    apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+    authDomain: "iwb-iwc.firebaseapp.com",
+    projectId: "iwb-iwc",
+    storageBucket: "iwb-iwc.appspot.com",
+    messagingSenderId: "520008388872",
+    appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+  });
+
+  const db = getFirestore(app);
+
+  window.trackOrders = async () => {
+    const email = document.getElementById("email").value.trim();
+    const tbody = document.getElementById("ordersTableBody");
+    tbody.innerHTML = "";
+
+    const snapshot = await getDocs(collection(db, "boughtProducts"));
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.buyerEmail === email) {
+        const row = document.createElement("tr");
+        const status = getStatus(new Date(data.purchasedAt));
+        row.innerHTML = `
+          <td>${data.name}</td>
+          <td>${data.qty}</td>
+          <td>${new Date(data.purchasedAt).toLocaleDateString()}</td>
+          <td class="status">${status}</td>
+        `;
+        tbody.appendChild(row);
+      }
+    });
+  };
+
+  function getStatus(purchaseDate) {
+    const now = new Date();
+    const diff = Math.floor((now - purchaseDate) / (1000 * 60 * 60 * 24)); // days
+
+    if (diff < 1) return "Processing";
+    if (diff < 3) return "Shipped";
+    if (diff < 6) return "Out for Delivery";
+    return "Delivered";
+  }
+</script>
+</body>
+</html>

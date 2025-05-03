@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Product</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 400px;
+      margin: 30px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+    .input {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: green;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    /* Custom Product Card Styling */
+.products-slick .product-widget {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 15px;
+  text-align: center;
+  min-height: 340px;
+}
+
+.products-slick .product-widget:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+}
+
+.products-slick .product-img img {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  border-radius: 5px;
+  transition: transform 0.3s ease;
+}
+
+.products-slick .product-widget:hover .product-img img {
+  transform: scale(1.05);
+}
+
+.products-slick .product-body {
+  margin-top: 15px;
+}
+
+.products-slick .product-category {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.products-slick .product-name a {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  text-decoration: none;
+}
+
+.products-slick .product-name a:hover {
+  color: #D10024;
+}
+
+.products-slick .product-price {
+  font-size: 18px;
+  font-weight: bold;
+  color: #D10024;
+}
+
+.products-slick .product-old-price {
+  font-size: 14px;
+  color: #aaa;
+  text-decoration: line-through;
+  margin-left: 8px;
+}
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Add Product</h2>
+  <form id="productForm">
+    <input type="text" id="category" placeholder="Category" required class="input">
+    <input type="text" id="name" placeholder="Product Name" required class="input">
+    <input type="number" id="price" placeholder="Current Price" required class="input">
+    <input type="number" id="oldPrice" placeholder="Old Price" class="input">
+    <input type="file" id="imageFile" accept="image/*" required class="input">
+    <button type="submit">Add Product</button>
+  </form>
+  <p id="message" style="color: green;"></p>
+</div>
+
+<script>
+  // Your Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+    authDomain: "iwb-iwc.firebaseapp.com",
+    projectId: "iwb-iwc",
+    storageBucket: "gs://iwb-iwc.firebasestorage.app",
+    messagingSenderId: "520008388872",
+    appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  // Handle form submit
+  document.getElementById("productForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const message = document.getElementById("message");
+
+    const category = document.getElementById("category").value.trim();
+    const name = document.getElementById("name").value.trim();
+    const price = parseFloat(document.getElementById("price").value);
+    const oldPrice = parseFloat(document.getElementById("oldPrice").value || 0);
+    const imageFile = document.getElementById("imageFile").files[0];
+
+    if (!imageFile) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    try {
+      // Upload image to Firebase Storage
+      const storageRef = storage.ref();
+      const fileRef = storageRef.child("product-images/" + imageFile.name);
+      const snapshot = await fileRef.put(imageFile);
+      const imageUrl = await snapshot.ref.getDownloadURL();
+
+      // Save product data in Firestore
+      await db.collection("products").add({
+        category,
+        name,
+        price,
+        oldPrice,
+        imageUrl,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      message.textContent = "✅ Product added successfully!";
+      document.getElementById("productForm").reset();
+    } catch (error) {
+      alert("❌ Error: " + error.message);
+    }
+  });
+</script>
+
+</body>
+</html>

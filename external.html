@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Investor View | Secure Financial Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+      text-align: center;
+    }
+
+    .tabs {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .tab-links {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .tab-links li {
+      margin: 0 10px;
+    }
+
+    .tab-links a {
+      padding: 10px 20px;
+      text-decoration: none;
+      color: #333;
+      border-radius: 5px;
+      background: #ddd;
+      transition: background 0.3s;
+    }
+
+    .tab-links a:hover {
+      background: #D10024;
+      color: white;
+    }
+
+    .chart-container {
+      margin-top: 40px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="section-title">
+      <h2>Investor View</h2>
+      <p>Secure Financial Portal</p>
+    </div>
+
+    <div class="tabs">
+      <ul class="tab-links">
+        <li><a href="Scriber.html">Subscribers</a></li>
+        <li><a href="payment_details.html">Payments</a></li>
+        <li><a href="boughtproduct.html">Products</a></li>
+      </ul>
+    </div>
+
+    <div class="chart-container">
+      <h4>Payments by Method</h4>
+      <canvas id="paymentChart" width="400" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Firebase & Chart Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+      authDomain: "iwb-iwc.firebaseapp.com",
+      projectId: "iwb-iwc",
+      storageBucket: "iwb-iwc.appspot.com",
+      messagingSenderId: "520008388872",
+      appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function renderChart() {
+      const snapshot = await getDocs(collection(db, "payments"));
+      const paymentTotals = {};
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const method = data.paymentMethod || "Unknown";
+        const amount = parseFloat(data.totalPrice) || 0;
+        paymentTotals[method] = (paymentTotals[method] || 0) + amount;
+      });
+
+      const ctx = document.getElementById("paymentChart").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: Object.keys(paymentTotals),
+          datasets: [{
+            label: "Total Payments ($)",
+            data: Object.values(paymentTotals),
+            backgroundColor: "#D10024"
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Amount ($)"
+              }
+            }
+          }
+        }
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", renderChart);
+  </script>
+</body>
+</html>

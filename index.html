@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Electro - Firebase Products</title>
+
+  <!-- Google font -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700" rel="stylesheet" />
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="css/bootstrap.min.css" />
+
+  <!-- Slick -->
+  <link rel="stylesheet" href="css/slick.css" />
+  <link rel="stylesheet" href="css/slick-theme.css" />
+
+  <!-- nouislider -->
+  <link rel="stylesheet" href="css/nouislider.min.css" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="css/font-awesome.min.css" />
+
+  <!-- Custom stylesheet -->
+ <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="Styles.css" />
+
+ <style>
+/* ================================
+   Section Styling (for "New Products")
+================================== */
+.section {
+  padding: 50px 0;
+  background-color: #f7f7f7;
+}
+
+.section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.section-title .title {
+  font-size: 36px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #333;
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+/* ================================
+   Product Carousel (Slick)
+================================== */
+.products-tabs {
+  position: relative;
+}
+
+.products-slick {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.products-slick .product {
+  margin-right: 20px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.products-slick .product:hover {
+  transform: scale(1.05);
+}
+
+#slick-nav-1 {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+}
+
+#slick-nav-1 .slick-prev,
+#slick-nav-1 .slick-next {
+  background-color: #D10024;
+  color: #FFF;
+  font-size: 20px;
+  padding: 5px 10px;
+  border-radius: 50%;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+#slick-nav-1 .slick-prev:hover,
+#slick-nav-1 .slick-next:hover {
+  opacity: 1;
+}
+
+#slick-nav-1 .slick-prev {
+  left: 10px;
+}
+
+#slick-nav-1 .slick-next {
+  right: 10px;
+}
+
+/* ================================
+   Product Item Styling
+================================== */
+.product {
+  position: relative;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
+}
+
+.product:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 18px rgba(0, 0, 0, 0.1);
+}
+
+.product .product-img {
+  position: relative;
+}
+
+.product .product-img > img {
+  width: 100%;
+  transition: transform 0.3s ease-in-out;
+}
+
+.product:hover .product-img > img {
+  transform: scale(1.1);
+}
+
+.product .product-body {
+  padding: 20px;
+  text-align: center;
+}
+
+.product .product-body .product-category {
+  font-size: 13px;
+  color: #8D99AE;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.product .product-body .product-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+  margin: 10px 0;
+}
+
+.product .product-body .product-name > a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.product .product-body .product-name > a:hover,
+.product .product-body .product-name > a:focus {
+  color: #D10024;
+}
+
+.product .product-body .product-price {
+  font-size: 20px;
+  font-weight: 600;
+  color: #D10024;
+  margin-bottom: 10px;
+}
+
+.product .product-body .product-price .product-old-price {
+  font-size: 75%;
+  font-weight: 400;
+  color: #8D99AE;
+  text-decoration: line-through;
+}
+
+.product .product-body .product-rating {
+  margin-bottom: 15px;
+}
+
+.product .product-body .product-rating > i {
+  color: #D10024;
+  margin-right: 3px;
+}
+
+.product .product-body .product-btns > button {
+  background: transparent;
+  border: 2px solid #D10024;
+  color: #D10024;
+  padding: 10px 20px;
+  font-weight: 700;
+  border-radius: 30px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.product .product-body .product-btns > button:hover {
+  background-color: #D10024;
+  color: #fff;
+}
+
+/* ================================
+   Responsive Styles
+================================== */
+@media (max-width: 768px) {
+  .section-title .title {
+    font-size: 28px;
+  }
+
+  .products-slick {
+    flex-direction: column;
+  }
+
+  .products-slick .product {
+    margin-right: 0;
+    margin-bottom: 20px;
+  }
+
+  #slick-nav-1 .slick-prev,
+  #slick-nav-1 .slick-next {
+    font-size: 16px;
+  }
+}
+
+
+
+
+</style>
+ 
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div id="top-header">
+      <div class="container">
+        <ul class="header-links pull-left">
+          <li><a href="#"><i class="fa fa-phone"></i> 266 2256 3260</a></li>
+          <li><a href="#"><i class="fa fa-envelope-o"></i> Electro.@gmail.com</a></li>
+          <li><a href="#"><i class="fa fa-map-marker"></i> 1734 Kingsway Road</a></li>
+        </ul>
+        <ul class="header-links pull-right">
+          <li><a href="#"><i class="fa fa-dollar"></i> USD</a></li>
+          <li><a href="login.html"><i class="fa fa-user-o"></i> My Account</a></li>
+
+        </ul>
+      </div>
+    </div>
+
+    <div id="header">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-3">
+            <div class="header-logo">
+              <a href="#" class="logo">
+                <img src="./img/logo.png" alt="Logo" />
+              </a>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="header-search">
+              <form>
+                <select class="input-select">
+                  <option value="0">All Categories</option>
+                  
+                </select>
+                <input class="input" placeholder="Search here" />
+                <button class="search-btn">Search</button>
+              </form>
+            </div>
+          </div>
+          
+          <div class="col-md-3 clearfix">
+            <div class="header-ctn">
+              <!-- Cart Button -->
+              <div>
+                <a href="cart.html">
+                  <i class="fa fa-shopping-cart"></i>
+                  <span>Your Cart</span>
+                  <div class="qty" id="cart-count">0</div>
+                </a>
+              </div>
+          
+              <!-- Chat Button -->
+              <div>
+                <a href="indexquery.html">
+                  <i class="fa fa-comments"></i>
+                  <span>Chat</span>
+                </a>
+              </div>
+          
+              <!-- Menu Toggle -->
+              <div class="menu-toggle">
+                <a href="#"><i class="fa fa-bars"></i><span>Menu</span></a>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SECTION -->
+  <div class="section">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="section-title">
+            <h3 class="title">Products</h3>
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="row">
+            <div class="products-tabs">
+              <div id="new-products" class="products-slick" data-nav="#slick-nav-1">
+                <!-- Firebase products will load here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEWSLETTER -->
+<!-- Newsletter Section -->
+<div id="newsletter" class="section">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="newsletter">
+          <p>Sign Up for the <strong>NEWSLETTER</strong></p>
+          <form id="newsletter-form">
+            <input id="newsletter-email" class="input" type="email" placeholder="Enter Your Email" required />
+            <button class="newsletter-btn" type="submit">
+              <i class="fa fa-envelope"></i> Subscribe
+            </button>
+          </form>
+
+            <ul class="newsletter-follow">
+              <li><a href="#"><i class="fa fa-facebook"></i></a></li>
+              <li><a href="#"><i class="fa fa-twitter"></i></a></li>
+              <li><a href="#"><i class="fa fa-instagram"></i></a></li>
+              <li><a href="#"><i class="fa fa-pinterest"></i></a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3 col-xs-6">
+          <div class="footer">
+            <h3 class="footer-title">Designers</h3>
+            <ul class="footer-links">
+              <li>Sandile Nhlapo</li>
+              <li>Lefa Rapopo</li>
+              <li>Mohale Nonyana</li>
+              <li>Phethile Nhlapo</li>
+              <li>Pontsho Kibane</li>
+            </ul>
+          </div>
+        </div>
+        
+
+        <div class="clearfix visible-xs"></div>
+
+        <div class="col-md-3 col-xs-6">
+          <div class="footer">
+            <h3 class="footer-title">Information</h3>
+            <ul class="footer-links">
+              <li><a href="about.html">About Us</a></li>
+              <li><a href="contactus.html">Contact Us</a></li>
+              
+              <li><a href="trace.html">Orders</a></li>
+              <li><a href="brought.html">Your Purchased Products</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/jquery.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/slick.min.js"></script>
+  <script src="js/nouislider.min.js"></script>
+  <script src="js/jquery.zoom.min.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase Product Loader -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+      authDomain: "iwb-iwc.firebaseapp.com",
+      projectId: "iwb-iwc",
+      storageBucket: "iwb-iwc.appspot.com",
+      messagingSenderId: "520008388872",
+      appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+    };
+  
+    // Init
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+  
+    const cartRef = collection(db, "cart");
+    const productsRef = collection(db, "products");
+    const newsletterRef = collection(db, "marketing");
+  
+    // On page load
+    window.onload = function () {
+      loadProducts();
+      updateCartCount();
+  
+      // Newsletter Form
+      const newsletterForm = document.getElementById("newsletter-form");
+      newsletterForm?.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const emailInput = document.getElementById("newsletter-email");
+        const email = emailInput.value.trim();
+  
+        if (email) {
+          try {
+            const q = query(newsletterRef, where("email", "==", email));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+              alert("You're already subscribed!");
+            } else {
+              await addDoc(newsletterRef, {
+                email: email,
+                subscribedAt: serverTimestamp()
+              });
+              alert("Thank you for subscribing!");
+              emailInput.value = "";
+            }
+          } catch (error) {
+            console.error("Newsletter error:", error);
+            alert("An error occurred. Please try again.");
+          }
+        }
+      });
+  
+      // Search Form
+      const searchForm = document.getElementById("searchForm");
+      searchForm?.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const searchValue = document.getElementById("searchInput").value.trim().toLowerCase();
+        const snapshot = await getDocs(productsRef);
+        let resultsHTML = "";
+  
+        snapshot.forEach(doc => {
+          const product = doc.data();
+          if (product.name?.toLowerCase().includes(searchValue)) {
+            resultsHTML += `
+              <div><strong>${product.name}</strong> - ${product.qty} pcs - $${product.price}</div>
+            `;
+          }
+        });
+  
+        if (resultsHTML === "") {
+          resultsHTML = "<div>No matching products found.</div>";
+        }
+  
+        document.getElementById("searchResults").innerHTML = resultsHTML;
+      });
+  
+      // Cart Button Click
+      document.addEventListener("click", async function (e) {
+        if (e.target && e.target.classList.contains("btn-primary")) {
+          const productCard = e.target.closest(".product-widget");
+          const name = productCard.querySelector(".product-name a").innerText;
+          const price = parseFloat(productCard.querySelector(".product-price").textContent.replace("$", ""));
+          const image = productCard.querySelector("img").src;
+  
+          const item = {
+            name,
+            price,
+            imageUrl: image,
+            qty: 1
+          };
+  
+          try {
+            await addDoc(cartRef, item);
+            alert(`${item.name} added to cart!`);
+            updateCartCount();
+          } catch (err) {
+            console.error("Error adding to cart:", err);
+          }
+        }
+      });
+    };
+  
+    // Load products from Firebase
+    async function loadProducts() {
+      const snapshot = await getDocs(productsRef);
+      const container = document.getElementById("new-products");
+      snapshot.forEach(doc => {
+        const product = doc.data();
+        const div = document.createElement("div");
+        div.classList.add("product-widget");
+        div.innerHTML = `
+          <div class="product-img">
+            <img src="${product.imageUrl}" alt="${product.name}" />
+          </div>
+          <div class="product-body">
+            <p class="product-category">${product.category}</p>
+            <h3 class="product-name"><a href="#">${product.name}</a></h3>
+            <h4 class="product-price">$${product.price}</h4>
+            <button class="btn btn-primary">Add to Cart</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+  
+    // Update cart count
+    async function updateCartCount() {
+      const snapshot = await getDocs(cartRef);
+      document.getElementById('cart-count').textContent = snapshot.size;
+    }
+    let registeredUser = null;
+  
+    function checkRegistration() {
+      if (localStorage.getItem("registered") === "true") {
+        window.location.href = "cart.html";
+      } else {
+        document.getElementById("registerModal").style.display = "block";
+        document.getElementById("overlay").style.display = "block";
+      }
+    }
+  
+    function closeModal() {
+      document.getElementById("registerModal").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
+    }
+  
+    function submitRegistration() {
+      const name = document.getElementById("regName").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+  
+      if (!name || !email) {
+        alert("Please fill in both fields.");
+        return;
+      }
+  
+      // Store in Firestore
+      db.collection("register").add({
+        name: name,
+        email: email,
+        registeredAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        localStorage.setItem("registered", "true"); // Store flag in localStorage
+        closeModal();
+        window.location.href = "cart.html";
+      }).catch(error => {
+        console.error("Error registering user:", error);
+        alert("Registration failed. Try again.");
+      });
+    }
+  </script>
+  <div id="registerModal" style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%); background:#fff; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.2); z-index:1000;">
+    <h3>Register to Continue</h3>
+    <input type="text" id="regName" placeholder="Your Name" style="display:block; margin:10px 0; width:100%;" />
+    <input type="email" id="regEmail" placeholder="Your Email" style="display:block; margin:10px 0; width:100%;" />
+    <button onclick="submitRegistration()">Submit</button>
+  </div>
+  <div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000000aa; z-index:999;" onclick="closeModal()"></div>
+  
+  
+</body>
+</html>

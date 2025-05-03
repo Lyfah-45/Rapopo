@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Payment</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    body { background: #f0f2f5; font-family: Arial; padding: 20px; }
+    .container { background: #fff; padding: 30px; border-radius: 10px; max-width: 800px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .btn-payment { background: #28a745; color: #fff; width: 100%; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2 class="text-center">Checkout & Payment</h2>
+  <form id="payment-form">
+    <div class="form-group"><label>Name</label><input id="card-name" class="form-control" required /></div>
+    <div class="form-group"><label>Card Number</label><input id="card-number" class="form-control" required /></div>
+    <div class="form-row">
+      <div class="form-group col"><label>Expiry</label><input type="month" id="expiry-date" class="form-control" required /></div>
+      <div class="form-group col"><label>CVV</label><input id="cvv" class="form-control" required /></div>
+    </div>
+    <div class="form-group"><label>Billing Email</label><input type="email" id="billing-email" class="form-control" required /></div>
+    <div class="form-group"><label>Address</label><input id="billing-address" class="form-control" required /></div>
+
+    <div class="order-summary mt-4">
+      <h5>Order Summary</h5>
+      <div id="product-list"></div>
+      <div class="d-flex justify-content-between"><strong>Total</strong><span id="total-price">$0.00</span></div>
+    </div>
+
+    <button type="submit" class="btn btn-payment mt-3">Pay & Download Receipt</button>
+  </form>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+  import {
+    getFirestore, collection, getDocs, addDoc, deleteDoc, doc
+  } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+  const app = initializeApp({
+    apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+    authDomain: "iwb-iwc.firebaseapp.com",
+    projectId: "iwb-iwc",
+    storageBucket: "iwb-iwc.appspot.com",
+    messagingSenderId: "520008388872",
+    appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+  });
+
+  const db = getFirestore(app);
+
+  async function loadCart() {
+    const listEl = document.getElementById("product-list");
+    const totalEl = document.getElementById("total-price");
+    listEl.innerHTML = "";
+    let total = 0;
+    const items = [];
+
+    const snapshot = await getDocs(collection(db, "cart"));
+    snapshot.forEach(docSnap => {
+      const item = docSnap.data();
+      const subtotal = item.price * item.qty;
+      total += subtotal;
+      items.push({ ...item, subtotal });
+      const row = document.createElement("div");
+      row.className = "d-flex justify-content-between";
+      row.innerHTML = `<span>${item.name} (x${item.qty})</span><span>$${subtotal.toFixed(2)}</span>`;
+      listEl.appendChild(row);
+    });
+
+    totalEl.textContent = `$${total.toFixed(2)}`;
+    return { items, total };
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const { items, total } = await loadCart();
+
+    document.getElementById("payment-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payment = {
+        name: document.getElementById("card-name").value,
+        email: document.getElementById("billing-email").value,
+        address: document.getElementById("billing-address").value,
+        total,
+        items,
+        paidAt: new Date().toISOString()
+      };
+
+      await addDoc(collection(db, "payments"), payment);
+      for (const item of items) {
+        await addDoc(collection(db, "boughtProducts"), {
+          name: item.name,
+          qty: item.qty,
+          price: item.price,
+          subtotal: item.subtotal,
+          purchasedAt: new Date().toISOString(),
+          buyerEmail: payment.email
+        });
+      }
+
+      // Clear cart
+      const cartSnap = await getDocs(collection(db, "cart"));
+      cartSnap.forEach(docSnap => deleteDoc(doc(db, "cart", docSnap.id)));
+
+      // Generate PDF
+      const { jsPDF } = window.jspdf;
+      const docPDF = new jsPDF();
+      docPDF.text("Receipt", 14, 20);
+      docPDF.text(`Name: ${payment.name}`, 14, 30);
+      docPDF.text(`Email: ${payment.email}`, 14, 36);
+      docPDF.autoTable({
+        startY: 45,
+        head: [['Product', 'Qty', 'Price', 'Subtotal']],
+        body: items.map(i => [i.name, i.qty, `$${i.price.toFixed(2)}`, `$${i.subtotal.toFixed(2)}`])
+      });
+      docPDF.text(`Total: $${total.toFixed(2)}`, 14, docPDF.lastAutoTable.finalY + 10);
+      docPDF.save("receipt.pdf");
+
+      alert("Payment successful! Receipt downloaded.");
+      window.location.href = "trace.html";
+    });
+  });
+</script>
+</body>
+</html>

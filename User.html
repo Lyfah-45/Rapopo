@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add User</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 30px;
+    }
+    .form-container {
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      max-width: 500px;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="form-container">
+      <h3 class="text-center">Add New User</h3>
+      <form id="userForm">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" class="form-control" id="username" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" class="form-control" id="email" required>
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select class="form-control" id="role" required>
+            <option value="">Select Role</option>
+            <option>Admin</option>
+            <option>Operations Team</option>
+            <option>Finance Team</option>
+            <option>Technical Team</option>
+            <option>External Users</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" class="form-control" id="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Add User</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+    import emailjs from "https://cdn.skypack.dev/@emailjs/browser@4";
+
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+      authDomain: "iwb-iwc.firebaseapp.com",
+      projectId: "iwb-iwc",
+      storageBucket: "iwb-iwc.appspot.com",
+      messagingSenderId: "520008388872",
+      appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Init EmailJS with Public Key
+    emailjs.init("RIa7Xmyjv-00LVja8"); // Replace with your actual public key
+
+    // Submit Handler
+    document.getElementById("userForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const role = document.getElementById("role").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        // Save to Firestore
+        await addDoc(collection(db, "users"), { username, email, role, password });
+
+        // Send Email
+        await emailjs.send("service_zv47hwm", "template_4blfh2i", {
+          to_email: email,
+          to_name: username,
+          password: password
+        });
+
+        alert("User added and email sent!");
+        document.getElementById("userForm").reset();
+      } catch (err) {
+        console.error("Error:", err);
+        alert("Failed to add user or send email.");
+      }
+    });
+  </script>
+</body>
+</html>

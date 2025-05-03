@@ -1,0 +1,62 @@
+<!-- thankyou.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thank You</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
+</head>
+<body>
+  <div class="container mt-5">
+    <div class="alert alert-success text-center">
+      <h2 id="thank-you-heading">Thank You for Your Payment!</h2>
+      <p id="payment-summary">Your transaction was successful. A receipt has been downloaded.</p>
+      <a href="index.html" class="btn btn-primary mt-3">Return to Home</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+      authDomain: "iwb-iwc.firebaseapp.com",
+      projectId: "iwb-iwc",
+      storageBucket: "iwb-iwc.appspot.com",
+      messagingSenderId: "520008388872",
+      appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const paymentId = getQueryParam("id");
+
+    if (paymentId) {
+      const paymentRef = doc(db, "payments", paymentId);
+      getDoc(paymentRef).then((docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const name = data.cardName || "Customer";
+          const amount = data.amount || "N/A";
+
+          document.getElementById("thank-you-heading").textContent = `Thank You, ${name}!`;
+          document.getElementById("payment-summary").textContent = `Your payment of $${amount} was successful. A receipt has been downloaded.`;
+        } else {
+          document.getElementById("thank-you-heading").textContent = "Thank You!";
+        }
+      }).catch((error) => {
+        console.error("Error fetching payment:", error);
+        document.getElementById("thank-you-heading").textContent = "Thank You!";
+      });
+    }
+  </script>
+</body>
+</html>

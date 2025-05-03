@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Newsletter Subscribe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
+  <style>
+    .newsletter { text-align: center; padding: 20px; }
+    .input { padding: 10px; width: 300px; }
+    .newsletter-btn { padding: 10px 20px; }
+  </style>
+</head>
+<body>
+
+<!-- Newsletter Section -->
+<div id="newsletter" class="section">
+  <div class="newsletter">
+    <p>Sign Up for the <strong>NEWSLETTER</strong></p>
+    <form id="newsletter-form">
+      <input id="newsletter-email" class="input" type="email" placeholder="Enter Your Email" required />
+      <button class="newsletter-btn" type="submit">
+        <i class="fa fa-envelope"></i> Subscribe
+      </button>
+    </form>
+    <p id="newsletter-message" style="display:none; margin-top:10px;"></p>
+    <ul class="newsletter-follow">
+      <li><a href="#"><i class="fa fa-facebook"></i></a></li>
+      <li><a href="#"><i class="fa fa-twitter"></i></a></li>
+      <li><a href="#"><i class="fa fa-instagram"></i></a></li>
+      <li><a href="#"><i class="fa fa-pinterest"></i></a></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script>
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+    authDomain: "iwb-iwc.firebaseapp.com",
+    projectId: "iwb-iwc",
+    storageBucket: "iwb-iwc.appspot.com",
+    messagingSenderId: "520008388872",
+    appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Newsletter form submission
+  document.getElementById("newsletter-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const emailInput = document.getElementById("newsletter-email");
+    const email = emailInput.value.trim();
+
+    if (email) {
+      db.collection("marketing").add({
+        email: email,
+        subscribedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        alert("Thank you for subscribing!");
+        emailInput.value = "";
+      }).catch((error) => {
+        console.error("Error adding email:", error);
+        alert("Subscription failed. Check console for error.");
+      });
+    } else {
+      alert("Please enter a valid email.");
+    }
+  });
+</script>
+
+</body>
+</html>

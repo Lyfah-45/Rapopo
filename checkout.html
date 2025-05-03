@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Electro - Checkout</title>
+
+  <!-- Google font -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700" rel="stylesheet" />
+
+  <!-- Bootstrap -->
+  <link type="text/css" rel="stylesheet" href="css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
+
+  <!-- Slick -->
+  <link type="text/css" rel="stylesheet" href="css/slick.css" />
+  <link type="text/css" rel="stylesheet" href="css/slick-theme.css" />
+
+  <!-- nouislider -->
+  <link type="text/css" rel="stylesheet" href="css/nouislider.min.css" />
+
+  <!-- Font Awesome Icon -->
+  <link rel="stylesheet" href="css/font-awesome.min.css" />
+
+  <!-- Custom stylesheet -->
+  <link type="text/css" rel="stylesheet" href="css/style.css" />
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    .payment-container {
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      margin: 30px auto;
+    }
+
+    .order-summary {
+      background-color: #f8f8f8;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 30px;
+    }
+
+    .btn-payment {
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      width: 100%;
+    }
+
+    .btn-payment:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div id="top-header">
+      <div class="container">
+        <ul class="header-links pull-left">
+        	<li><a href="#"><i class="fa fa-phone"></i> 266 2256 3260</a></li>
+          <li><a href="#"><i class="fa fa-envelope-o"></i> Electro.@gmail.com</a></li>
+          <li><a href="#"><i class="fa fa-map-marker"></i> 1734 Kingsway Road</a></li>
+        </ul>
+        <ul class="header-links pull-right">
+          <li><a href="#"><i class="fa fa-dollar"></i> USD</a></li>
+          <li><a href="login.html"><i class="fa fa-user-o"></i> My Account</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="header">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-3">
+            <div class="header-logo">
+              <a href="#" class="logo">
+                <img src="./img/logo.png" alt="">
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION -->
+  <nav id="navigation">
+    <div class="container">
+      <div id="responsive-nav"></div>
+    </div>
+  </nav>
+
+  <!-- BREADCRUMB -->
+  <div id="breadcrumb" class="section">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <h3 class="breadcrumb-header">Checkout</h3>
+          <ul class="breadcrumb-tree">
+            <li><a href="#">Home</a></li>
+            <li class="active">Checkout</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION -->
+  <div class="section">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="payment-container">
+            <h2 class="text-center">Payment Information</h2>
+            <form id="payment-form">
+              <div class="form-group">
+                <label>Card Holder Name</label>
+                <input id="card-name" class="form-control" required />
+              </div>
+              <div class="form-group">
+                <label>Card Number</label>
+                <input id="card-number" class="form-control" required />
+              </div>
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label>Expiration Date</label>
+                  <input type="month" id="expiry-date" class="form-control" required />
+                </div>
+                <div class="form-group col-6">
+                  <label>CVV</label>
+                  <input id="cvv" class="form-control" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Payment Method</label>
+                <select id="payment-method" class="form-control" required>
+                  <option value="credit-card">Credit Card</option>
+                  <option value="paypal">PayPal</option>
+                  <option value="bank-transfer">Bank Transfer</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Billing Address</label>
+                <input id="billing-address" class="form-control" required />
+              </div>
+              <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="billing-email" class="form-control" required />
+              </div>
+
+              <div class="order-summary">
+                <h4>Order Summary</h4>
+                <div id="product-list"></div>
+                <div class="d-flex justify-content-between total">
+                  <strong>Total</strong>
+                  <span id="total-price">$0.00</span>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-payment mt-3">Pay Now</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /SECTION -->
+
+  <!-- NEWSLETTER -->
+  <div id="newsletter" class="section">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+			<div class="newsletter">
+				<p>Sign Up for the <strong>NEWSLETTER</strong></p>
+				<form id="newsletter-form">
+				  <input id="newsletter-email" class="input" type="email" placeholder="Enter Your Email" required />
+				  <button class="newsletter-btn" type="submit">
+					<i class="fa fa-envelope"></i> Subscribe
+				  </button>
+				</form>
+            <ul class="newsletter-follow">
+              <li><a href="#"><i class="fa fa-facebook"></i></a></li>
+              <li><a href="#"><i class="fa fa-twitter"></i></a></li>
+              <li><a href="#"><i class="fa fa-instagram"></i></a></li>
+              <li><a href="#"><i class="fa fa-pinterest"></i></a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer id="footer">
+    <div class="section">
+      <div class="container">
+        <div class="row"></div>
+      </div>
+    </div>
+
+    <div id="bottom-footer" class="section">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-12 text-center">
+            <ul class="footer-payments">
+              <li><a href="#"><i class="fa fa-cc-visa"></i></a></li>
+              <li><a href="#"><i class="fa fa-credit-card"></i></a></li>
+              <li><a href="#"><i class="fa fa-cc-paypal"></i></a></li>
+              <li><a href="#"><i class="fa fa-cc-mastercard"></i></a></li>
+              <li><a href="#"><i class="fa fa-cc-discover"></i></a></li>
+              <li><a href="#"><i class="fa fa-cc-amex"></i></a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- jQuery Plugins -->
+  <script src="js/jquery.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/slick.min.js"></script>
+  <script src="js/nouislider.min.js"></script>
+  <script src="js/jquery.zoom.min.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- Firebase + Payment Handling -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs, addDoc,
+      deleteDoc, doc
+    } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+      authDomain: "iwb-iwc.firebaseapp.com",
+      projectId: "iwb-iwc",
+      storageBucket: "iwb-iwc.appspot.com",
+      messagingSenderId: "520008388872",
+      appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function updateOrderSummary() {
+      const listEl = document.getElementById("product-list");
+      const totalEl = document.getElementById("total-price");
+      listEl.innerHTML = "";
+      let total = 0;
+
+      const snapshot = await getDocs(collection(db, "cart"));
+      const items = [];
+
+      snapshot.forEach(doc => {
+        const item = doc.data();
+        item.id = doc.id;
+        const subtotal = item.price * item.qty;
+        total += subtotal;
+        items.push(item);
+
+        const row = document.createElement("div");
+        row.className = "d-flex justify-content-between";
+        row.innerHTML = `<span>${item.name} (x${item.qty})</span><span>$${subtotal.toFixed(2)}</span>`;
+        listEl.appendChild(row);
+      });
+
+      totalEl.textContent = `$${total.toFixed(2)}`;
+      return { total, items };
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const { total, items } = await updateOrderSummary();
+
+      document.getElementById("payment-form").onsubmit = async e => {
+        e.preventDefault();
+
+        const paymentData = {
+          cardName: document.getElementById("card-name").value,
+          cardNumber: document.getElementById("card-number").value,
+          expiryDate: document.getElementById("expiry-date").value,
+          cvv: document.getElementById("cvv").value,
+          paymentMethod: document.getElementById("payment-method").value,
+          billingAddress: document.getElementById("billing-address").value,
+          billingEmail: document.getElementById("billing-email").value,
+          totalPrice: total,
+          items
+        };
+
+        try {
+          await addDoc(collection(db, "payments"), paymentData);
+
+          for (const item of items) {
+            await addDoc(collection(db, "boughtProducts"), {
+              name: item.name,
+              qty: item.qty,
+              price: item.price,
+              subtotal: item.qty * item.price,
+              purchasedAt: new Date().toISOString(),
+              buyerEmail: paymentData.billingEmail
+            });
+          }
+
+          const cartSnapshot = await getDocs(collection(db, "cart"));
+          for (const cartDoc of cartSnapshot.docs) {
+            await deleteDoc(doc(db, "cart", cartDoc.id));
+          }
+
+          const { jsPDF } = window.jspdf;
+          const docPDF = new jsPDF();
+          docPDF.text("Purchase Receipt", 14, 20);
+          docPDF.text(`Name: ${paymentData.cardName}`, 14, 30);
+          docPDF.text(`Email: ${paymentData.billingEmail}`, 14, 36);
+          docPDF.text("Items Purchased:", 14, 48);
+
+          const tableData = paymentData.items.map(i => [
+            i.name, i.qty, `$${i.price.toFixed(2)}`, `$${(i.qty * i.price).toFixed(2)}`
+          ]);
+
+          docPDF.autoTable({
+            head: [['Name', 'Qty', 'Price', 'Subtotal']],
+            body: tableData,
+            startY: 55
+          });
+
+          docPDF.text(`Total: $${total.toFixed(2)}`, 14, docPDF.lastAutoTable.finalY + 10);
+          docPDF.save("receipt.pdf");
+
+          localStorage.setItem("receiptName", paymentData.cardName);
+          window.location.href = "thankyou.html";
+
+        } catch (err) {
+          console.error(err);
+          alert("Error processing payment.");
+        }
+      };
+    });
+	// Newsletter Form
+	const newsletterForm = document.getElementById("newsletter-form");
+      newsletterForm?.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const emailInput = document.getElementById("newsletter-email");
+        const email = emailInput.value.trim();
+  
+        if (email) {
+          try {
+            const q = query(newsletterRef, where("email", "==", email));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+              alert("You're already subscribed!");
+            } else {
+              await addDoc(newsletterRef, {
+                email: email,
+                subscribedAt: serverTimestamp()
+              });
+              alert("Thank you for subscribing!");
+              emailInput.value = "";
+            }
+          } catch (error) {
+            console.error("Newsletter error:", error);
+            alert("An error occurred. Please try again.");
+          }
+        }
+      });
+  </script>
+</body>
+</html>

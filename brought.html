@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Brought Products</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+</head>
+<body>
+<div class="container mt-5">
+  <h2 class="text-center mb-4">Your Purchased Products</h2>
+  <input id="email" class="form-control mb-3" placeholder="Enter your email to search purchases" />
+  <button class="btn btn-primary mb-4" onclick="loadMyProducts()">Search</button>
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Subtotal</th>
+        <th>Purchased At</th>
+      </tr>
+    </thead>
+    <tbody id="productsTableBody"></tbody>
+  </table>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+  const app = initializeApp({
+    apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+    authDomain: "iwb-iwc.firebaseapp.com",
+    projectId: "iwb-iwc",
+    storageBucket: "iwb-iwc.appspot.com",
+    messagingSenderId: "520008388872",
+    appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+  });
+
+  const db = getFirestore(app);
+
+  window.loadMyProducts = async () => {
+    const email = document.getElementById("email").value.trim();
+    const tbody = document.getElementById("productsTableBody");
+    tbody.innerHTML = "";
+
+    const snapshot = await getDocs(collection(db, "boughtProducts"));
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.buyerEmail === email) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.name}</td>
+          <td>${data.qty}</td>
+          <td>$${data.price.toFixed(2)}</td>
+          <td>$${data.subtotal.toFixed(2)}</td>
+          <td>${new Date(data.purchasedAt).toLocaleDateString()}</td>
+        `;
+        tbody.appendChild(row);
+      }
+    });
+  };
+</script>
+</body>
+</html>

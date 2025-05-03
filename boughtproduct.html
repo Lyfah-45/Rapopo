@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bought Products</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<div class="container mt-5">
+  <h2 class="text-center">Bought Products</h2>
+
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <label>Start Date:</label>
+      <input type="date" id="startDate" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label>End Date:</label>
+      <input type="date" id="endDate" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary btn-block" onclick="filterByDate()">Filter</button>
+    </div>
+    <div class="col-md-3 text-right">
+      <label>&nbsp;</label>
+      <button class="btn btn-success mr-2" onclick="exportToExcel()">Export to Excel</button>
+      <button class="btn btn-danger" onclick="exportToPDF()">Export to PDF</button>
+    </div>
+  </div>
+
+  <table class="table table-bordered" id="productsTable">
+    <thead class="thead-dark">
+    <tr>
+      <th>Name</th>
+      <th>Quantity</th>
+      <th>Price</th>
+      <th>Subtotal</th>
+      <th>Date</th>
+      <th>Buyer Email</th>
+    </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <h5 id="mostSoldProduct" class="mt-4 text-success font-weight-bold"></h5>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+    authDomain: "iwb-iwc.firebaseapp.com",
+    projectId: "iwb-iwc",
+    storageBucket: "iwb-iwc.appspot.com",
+    messagingSenderId: "520008388872",
+    appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let allProducts = [];
+
+  async function loadProducts() {
+    const snapshot = await getDocs(collection(db, "boughtProducts"));
+    allProducts = snapshot.docs.map(doc => doc.data());
+    displayProducts(allProducts);
+    findMostSoldProduct(allProducts);
+  }
+
+  function displayProducts(data) {
+    const tbody = document.getElementById("tableBody");
+    tbody.innerHTML = "";
+
+    data.forEach(product => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${product.name}</td>
+        <td>${product.qty}</td>
+        <td>$${product.price.toFixed(2)}</td>
+        <td>$${product.subtotal.toFixed(2)}</td>
+        <td>${new Date(product.purchasedAt).toLocaleDateString()}</td>
+        <td>${product.buyerEmail}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  function findMostSoldProduct(data) {
+    const counts = {};
+    data.forEach(p => {
+      counts[p.name] = (counts[p.name] || 0) + p.qty;
+    });
+
+    let max = 0, topProduct = "";
+    for (const [name, qty] of Object.entries(counts)) {
+      if (qty > max) {
+        max = qty;
+        topProduct = name;
+      }
+    }
+
+    document.getElementById("mostSoldProduct").textContent =
+      topProduct ? `Most Sold Product: ${topProduct} (${max} units)` : '';
+  }
+
+  window.filterByDate = () => {
+    const start = new Date(document.getElementById("startDate").value);
+    const end = new Date(document.getElementById("endDate").value);
+    end.setHours(23, 59, 59, 999);
+
+    const filtered = allProducts.filter(p => {
+      const date = new Date(p.purchasedAt);
+      return date >= start && date <= end;
+    });
+
+    displayProducts(filtered);
+    findMostSoldProduct(filtered);
+  };
+
+  window.exportToExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const ws_data = [
+      ["Name", "Qty", "Price", "Subtotal", "Date", "Buyer Email"],
+      ...allProducts.map(p => [
+        p.name, p.qty, p.price, p.subtotal,
+        new Date(p.purchasedAt).toLocaleDateString(),
+        p.buyerEmail
+      ])
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "Bought Products");
+    XLSX.writeFile(wb, "bought_products.xlsx");
+  };
+
+  window.exportToPDF = () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("Bought Products Report", 14, 14);
+
+    const tableData = allProducts.map(p => [
+      p.name,
+      p.qty,
+      `$${p.price.toFixed(2)}`,
+      `$${p.subtotal.toFixed(2)}`,
+      new Date(p.purchasedAt).toLocaleDateString(),
+      p.buyerEmail
+    ]);
+
+    doc.autoTable({
+      head: [["Name", "Qty", "Price", "Subtotal", "Date", "Buyer Email"]],
+      body: tableData,
+      startY: 20
+    });
+
+    doc.save("bought_products.pdf");
+  };
+
+  loadProducts();
+</script>
+</body>
+</html>

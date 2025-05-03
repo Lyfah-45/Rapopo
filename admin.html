@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard</title>
+
+  <!-- Bootstrap & Chart.js CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      background-color: #2e2e2e; /* Darker grey background */
+      color: #dcdcdc; /* Light grey text */
+      padding: 20px;
+    }
+    .chart-container {
+      background: #3a3a3a; /* Darker grey for chart containers */
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); /* Darker shadow */
+    }
+    h3 {
+      margin-bottom: 20px;
+      color: #f5f5f5; /* Lighter grey for header text */
+    }
+    .nav-tabs .nav-link {
+      color: #dcdcdc; /* Light grey text for navigation links */
+    }
+    .nav-tabs .nav-link.active {
+      background-color: #4b4b4b; /* Slightly lighter grey for active tab */
+      color: #ffffff;
+    }
+    .nav-link {
+      border-color: #555; /* Darker grey border */
+    }
+    .chart-container canvas {
+      height: 300px !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2 class="text-center mb-4">Admin Dashboard</h2>
+
+    <ul class="nav nav-tabs">
+      <ul class="nav nav-tabs">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+            Users
+          </a>
+          <div class="dropdown-menu">
+            <a class="dropdown-item" href="view_users.html">View Users</a>
+            <a class="dropdown-item" href="User.html">Add User</a>
+          </div>
+        </li>
+      </ul>
+      
+      <li class="nav-item"><a class="nav-link" href="payment_details.html">Sales</a></li>
+      <li class="nav-item"><a class="nav-link" href="income_statement.html">Income Statement</a></li>
+      <li class="nav-item"><a class="nav-link" href="adminquery.html">Query</a></li>
+    </ul>
+
+    <!-- Charts Section -->
+    <div class="row mt-4">
+      <div class="col-md-6">
+        <div class="chart-container">
+          <h3>Payment Method Distribution</h3>
+          <canvas id="paymentMethodChart"></canvas>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="chart-container">
+          <h3>Monthly Revenue</h3>
+          <canvas id="monthlyRevenueChart"></canvas>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="chart-container">
+          <h3>Net Profit Over Time</h3>
+          <canvas id="netProfitChart"></canvas>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="chart-container">
+          <h3>Expense Breakdown</h3>
+          <canvas id="expenseBreakdownChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK & Chart Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+      authDomain: "iwb-iwc.firebaseapp.com",
+      projectId: "iwb-iwc",
+      storageBucket: "iwb-iwc.appspot.com",
+      messagingSenderId: "520008388872",
+      appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Load payment and revenue data
+    async function loadDashboardData() {
+      const snapshot = await getDocs(collection(db, "payments"));
+
+      const paymentMethods = {};
+      const monthlyRevenue = {};
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const method = data.paymentMethod || "Other";
+        const amount = parseFloat(data.totalPrice || 0);
+        const date = data.date || new Date().toISOString();
+        const month = new Date(date).toLocaleString('default', { month: 'short', year: 'numeric' });
+
+        paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+        monthlyRevenue[month] = (monthlyRevenue[month] || 0) + amount;
+      });
+
+      renderPaymentMethodChart(paymentMethods);
+      renderMonthlyRevenueChart(monthlyRevenue);
+    }
+
+    // Load net profit and expenses from expenseReports
+    async function loadExtraCharts() {
+      const snapshot = await getDocs(collection(db, "expenseReports"));
+      const netProfitData = [];
+      const netProfitLabels = [];
+      const expenseTotals = { capital: 0, salaries: 0, transport: 0, advertising: 0, bills: 0 };
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate?.() || new Date(data.createdAt);
+        const label = new Date(createdAt).toLocaleDateString();
+
+        netProfitLabels.push(label);
+        netProfitData.push(data.netProfit || 0);
+
+        expenseTotals.capital += data.capital || 0;
+        expenseTotals.salaries += data.salaries || 0;
+        expenseTotals.transport += data.transport || 0;
+        expenseTotals.advertising += data.advertising || 0;
+        expenseTotals.bills += data.bills || 0;
+      });
+
+      renderNetProfitChart(netProfitLabels, netProfitData);
+      renderExpenseBreakdownChart(expenseTotals);
+    }
+
+    function renderPaymentMethodChart(data) {
+      const ctx = document.getElementById('paymentMethodChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(data),
+          datasets: [{
+            data: Object.values(data),
+            backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d']
+          }]
+        },
+        options: {
+          responsive: true,
+          aspectRatio: 1
+        }
+      });
+    }
+
+    function renderMonthlyRevenueChart(data) {
+      const ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
+      const labels = Object.keys(data).sort((a, b) => new Date('1 ' + a) - new Date('1 ' + b));
+      const values = labels.map(label => data[label]);
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Revenue ($)',
+            data: values,
+            backgroundColor: '#17a2b8'
+          }]
+        },
+        options: {
+          responsive: true,
+          aspectRatio: 1,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function renderNetProfitChart(labels, data) {
+      const ctx = document.getElementById('netProfitChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Net Profit ($)',
+            data,
+            borderColor: '#28a745',
+            fill: false,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function renderExpenseBreakdownChart(expenses) {
+      const ctx = document.getElementById('expenseBreakdownChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(expenses),
+          datasets: [{
+            data: Object.values(expenses),
+            backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d']
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
+    }
+
+    loadDashboardData();
+    loadExtraCharts();
+  </script>
+
+  <!-- Bootstrap JS & jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

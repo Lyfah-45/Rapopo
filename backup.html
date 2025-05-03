@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Firestore Backup</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+</head>
+<body class="p-4">
+  <h3>📦 Firestore Backup</h3>
+  <button class="btn btn-success mb-3" id="downloadBackup">Download Backup</button>
+  <div id="status"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getFirestore, getDocs, collection } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+      authDomain: "iwb-iwc.firebaseapp.com",
+      projectId: "iwb-iwc",
+      storageBucket: "iwb-iwc.appspot.com",
+      messagingSenderId: "520008388872",
+      appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    document.getElementById("downloadBackup").addEventListener("click", async () => {
+      const collections = ["products", "payments", "cart", "users"];
+      const backupData = {};
+
+      for (const colName of collections) {
+        const colSnap = await getDocs(collection(db, colName));
+        backupData[colName] = colSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      }
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `firestore-backup-${new Date().toISOString()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      document.getElementById("status").innerHTML = `<div class="alert alert-success">Backup downloaded!</div>`;
+    });
+  </script>
+</body>
+</html>

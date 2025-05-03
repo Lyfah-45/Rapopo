@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eCommerce Tech Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    .card {
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .badge-success {
+      background-color: #28a745;
+    }
+    .badge-danger {
+      background-color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="mb-4 text-center">🛒 eCommerce Technical Dashboard</h2>
+
+    <!-- Server Status -->
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">🖥️ Server Status</h5>
+        <p>Status: <span id="serverStatus" class="badge">Loading...</span></p>
+        <button class="btn btn-outline-primary btn-sm" onclick="loadDashboardData()">Ping Server</button>
+      </div>
+    </div>
+
+    <!-- Deployment Panel -->
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">🚀 Deployment Panel</h5>
+        <p>Current Version: <strong id="currentVersion">Loading...</strong></p>
+        <button class="btn btn-primary btn-sm" disabled>Deploy Update</button>
+        <button class="btn btn-danger btn-sm" disabled>Rollback</button>
+      </div>
+    </div>
+
+    <!-- Error Monitor -->
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">⚠️ Error Monitor (Last 5 Errors)</h5>
+        <ul class="list-group" id="errorList">
+          <li class="list-group-item">Loading...</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- API Health -->
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">🔌 API Health</h5>
+        <ul id="apiHealthList">
+          <li>Loading...</li>
+        </ul>
+        <button class="btn btn-secondary btn-sm" onclick="loadDashboardData()">Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Firestore Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+      authDomain: "iwb-iwc.firebaseapp.com",
+      projectId: "iwb-iwc",
+      storageBucket: "iwb-iwc.appspot.com",
+      messagingSenderId: "520008388872",
+      appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.loadDashboardData = async function () {
+      try {
+        // Deployment Info
+        const deployDoc = await getDoc(doc(db, "dashboard", "deployment"));
+        if (deployDoc.exists()) {
+          document.getElementById("currentVersion").textContent = deployDoc.data().version || "N/A";
+        }
+
+        // Server Status
+        const serverDoc = await getDoc(doc(db, "dashboard", "server"));
+        const badge = document.getElementById("serverStatus");
+        if (serverDoc.exists()) {
+          const status = serverDoc.data().status || "Offline";
+          badge.textContent = status;
+          badge.className = "badge " + (status === "Online" ? "badge-success" : "badge-danger");
+        }
+
+        // Error Logs (last 5, ordered by timestamp descending)
+        const errorList = document.getElementById("errorList");
+        errorList.innerHTML = "";
+        const q = query(collection(db, "errors"), orderBy("timestamp", "desc"), limit(5));
+        const errorsSnapshot = await getDocs(q);
+        if (!errorsSnapshot.empty) {
+          errorsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            const li = document.createElement("li");
+            li.className = "list-group-item";
+            li.textContent = `[${data.timestamp}] ${data.message}`;
+            errorList.appendChild(li);
+          });
+        } else {
+          errorList.innerHTML = "<li class='list-group-item'>No errors found</li>";
+        }
+
+        // API Health
+        const apiDoc = await getDoc(doc(db, "dashboard", "apiHealth"));
+        const apiList = document.getElementById("apiHealthList");
+        apiList.innerHTML = "";
+        if (apiDoc.exists()) {
+          const data = apiDoc.data();
+          for (const key in data) {
+            const li = document.createElement("li");
+            li.textContent = `${data[key] ? "✅" : "❌"} ${key}`;
+            apiList.appendChild(li);
+          }
+        } else {
+          apiList.innerHTML = "<li>No API health data found</li>";
+        }
+      } catch (error) {
+        console.error("Error loading dashboard:", error);
+        alert("Failed to load dashboard data.");
+      }
+    };
+
+    loadDashboardData();
+  </script>
+</body>
+</html>

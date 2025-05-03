@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IWB Admin Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs, getDoc, updateDoc,
+      doc, query, where, onSnapshot, addDoc, deleteDoc
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDal_T5FxxrZHEOtXphcxlRUjjp9Sa7xCI",
+      authDomain: "iwbproject-2beee.firebaseapp.com",
+      projectId: "iwbproject-2beee",
+      storageBucket: "iwbproject-2beee.appspot.com",
+      messagingSenderId: "582945763103",
+      appId: "1:582945763103:web:c48ef37d635d2d0db24a2a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.showPanel = function(panelId) {
+      document.querySelectorAll('.panel-view').forEach(panel => panel.style.display = 'none');
+      document.getElementById(panelId).style.display = 'block';
+    };
+
+    async function loadQueryManagement() {
+      const queryList = document.getElementById('queryList');
+      const learningTableBody = document.querySelector('#learningTable tbody');
+
+      const q = query(collection(db, "queries"), where("status", "==", "pending"));
+      onSnapshot(q, (snapshot) => {
+        queryList.innerHTML = '';
+        snapshot.forEach(docSnap => {
+          const queryData = docSnap.data();
+          const queryItem = document.createElement('div');
+          queryItem.className = 'query-item';
+          queryItem.innerHTML = `
+            <h3>From: ${queryData.name} (${queryData.email})</h3>
+            <p>${queryData.message}</p>
+            <small>${new Date(queryData.timestamp).toLocaleString()}</small>
+            <textarea id="response-${docSnap.id}" placeholder="Your response"></textarea>
+            <button onclick="handleResponse('${docSnap.id}')">Submit Response</button>
+          `;
+          queryList.appendChild(queryItem);
+        });
+      });
+
+      const completedSnapshot = await getDocs(collection(db, "query_responses"));
+      learningTableBody.innerHTML = '';
+      completedSnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const row = learningTableBody.insertRow();
+        row.setAttribute("data-id", docSnap.id);
+        row.innerHTML = `
+          <td>${data.query}</td>
+          <td>${data.response}</td>
+          <td>${data.usedCount || 0}</td>
+          <td><button onclick="deleteResponse('${docSnap.id}')">Delete</button></td>
+        `;
+      });
+    }
+
+    window.handleResponse = async function(queryId) {
+      const responseText = document.getElementById(`response-${queryId}`).value.trim();
+      if (!responseText) return alert('Please enter a response');
+
+      await updateDoc(doc(db, "queries", queryId), {
+        status: "complete",
+        response: responseText,
+        resolvedAt: Date.now(),
+        resolvedBy: "admin"
+      });
+
+      const queryDoc = await getDoc(doc(db, "queries", queryId));
+      const queryData = queryDoc.data();
+
+      const responses = await getDocs(collection(db, "query_responses"));
+      let exists = false;
+
+      responses.forEach(docSnap => {
+        const existingQuery = docSnap.data().query;
+        if (similarity(queryData.message, existingQuery) > 0.8) exists = true;
+      });
+
+      if (!exists) {
+        await addDoc(collection(db, "query_responses"), {
+          query: queryData.message,
+          response: responseText,
+          createdAt: Date.now(),
+          usedCount: 1
+        });
+      }
+
+      alert('Response submitted and added to learning database');
+    };
+
+    window.deleteResponse = async function(responseId) {
+      if (!confirm('Delete this learned response?')) return;
+      await deleteDoc(doc(db, "query_responses", responseId));
+      const row = document.querySelector(`tr[data-id="${responseId}"]`);
+      if (row) row.remove();
+    };
+
+    function similarity(msg1, msg2) {
+      const a = new Set(msg1.toLowerCase().split(/\s+/));
+      const b = new Set(msg2.toLowerCase().split(/\s+/));
+      const intersection = new Set([...a].filter(x => b.has(x)));
+      const union = new Set([...a, ...b]);
+      return intersection.size / union.size;
+    }
+
+    async function loadSummaryData() {
+      const totalSnapshot = await getDocs(collection(db, "queries"));
+      const pendingCount = (await getDocs(query(collection(db, "queries"), where("status", "==", "pending")))).size;
+      const responseCount = (await getDocs(collection(db, "query_responses"))).size;
+      const answeredCount = totalSnapshot.size - pendingCount;
+
+      const responses = totalSnapshot;
+      const byDay = {};
+
+      responses.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.status === "complete" && data.resolvedAt) {
+          const date = new Date(data.resolvedAt).toLocaleDateString();
+          if (!byDay[date]) byDay[date] = { admin: 0, bot: 0 };
+          if (data.resolvedBy === 'admin') byDay[date].admin++;
+          else byDay[date].bot++;
+        }
+      });
+
+      const labels = Object.keys(byDay);
+      const adminData = labels.map(d => byDay[d].admin);
+      const botData = labels.map(d => byDay[d].bot);
+
+      // Bar chart
+      new Chart(document.getElementById('pendingChart'), {
+        type: 'bar',
+        data: {
+          labels: ['Pending', 'Learned', 'Total Queries', 'Answered'],
+          datasets: [{
+            label: 'Count',
+            data: [pendingCount, responseCount, totalSnapshot.size, answeredCount],
+            backgroundColor: ['#f39c12', '#2ecc71', '#9b59b6', '#3498db']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y', // Make bar chart horizontal
+          scales: {
+            x: { beginAtZero: true }
+          }
+        }
+      });
+
+      // Doughnut chart
+      new Chart(document.getElementById('responsePieChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Pending', 'Learned'],
+          datasets: [{
+            data: [pendingCount, responseCount],
+            backgroundColor: ['#e74c3c', '#3498db']
+          }]
+        },
+        options: {
+          cutout: '75%',
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+
+      // Line chart
+      new Chart(document.getElementById('dailyResponseChart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Admin', data: adminData, borderColor: '#2980b9', backgroundColor: 'rgba(41, 128, 185, 0.2)', fill: true },
+            { label: 'Bot', data: botData, borderColor: '#27ae60', backgroundColor: 'rgba(39, 174, 96, 0.2)', fill: true }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      showPanel('query-management');
+      loadQueryManagement();
+      loadSummaryData();
+    });
+  </script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      background: linear-gradient(to right, #f5f7fa, #c3cfe2);
+    }
+    .container {
+      display: flex;
+      width: 100%;
+    }
+    .sidebar {
+      background-color: #34495e;
+      color: white;
+      padding: 20px;
+      width: 220px;
+      min-width: 220px;
+    }
+    .sidebar h2 {
+      margin-bottom: 1em;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+    .sidebar ul li a {
+      color: white;
+      text-decoration: none;
+      display: block;
+      padding: 10px;
+      margin-bottom: 5px;
+      border-radius: 5px;
+      background-color: #2c3e50;
+    }
+    .sidebar ul li a:hover {
+      background-color: #1abc9c;
+    }
+    .main-content {
+      flex-grow: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+    .panel-view {
+      display: none;
+    }
+    .panel {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .query-item {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      min-height: 100px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 15px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    #learningTable {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #learningTable th, #learningTable td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    #learningTable th {
+      background-color: #f2f2f2;
+    }
+    #learningTable tr:hover {
+      background-color: #f5f5f5;
+    }
+    
+    /* Chart container styles */
+    .chart-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .chart-wrapper {
+      flex: 1;
+      min-width: 300px;
+      height: 300px;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .chart-wrapper canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="sidebar">
+      <h2>IWB Admin</h2>
+      <ul>
+        <li><a href="#" onclick="showPanel('query-management')">Query Management</a></li>
+        <li><a href="#" onclick="showPanel('dashboard')">Summary Dashboard</a></li>
+      </ul>
+    </nav>
+
+    <main class="main-content">
+      <section id="query-management" class="panel-view">
+        <h1>Query Management</h1>
+        <div class="panel">
+          <h2>Pending Queries</h2>
+          <div id="queryList"></div>
+        </div>
+        <div class="panel">
+          <h2>Learned Responses</h2>
+          <table id="learningTable">
+            <thead>
+              <tr><th>Query</th><th>Response</th><th>Used Count</th><th>Actions</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="dashboard" class="panel-view" style="display:none;">
+        <h1>Summary Dashboard</h1>
+        <div class="chart-container">
+          <div class="chart-wrapper">
+            <canvas id="pendingChart"></canvas>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="responsePieChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-container">
+          <div class="chart-wrapper" style="flex: 2;">
+            <canvas id="dailyResponseChart"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

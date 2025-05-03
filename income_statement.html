@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Income Statement</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="p-4">
+  <div class="container">
+    <h2 class="mb-4 text-center">📈 Income Statement</h2>
+
+    <!-- Date Filtering -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <input type="date" class="form-control" id="startDate" />
+      </div>
+      <div class="col-md-4">
+        <input type="date" class="form-control" id="endDate" />
+      </div>
+      <div class="col-md-4">
+        <button class="btn btn-info" onclick="filterByDate()">Filter</button>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <h5><strong>Total Revenue:</strong> $<span id="totalRevenue">0.00</span></h5>
+    </div>
+
+    <h5 class="mb-3">Enter Expenses</h5>
+    <div class="row">
+      <div class="col-md-4 mb-2"><input type="number" class="form-control" id="capital" placeholder="Capital"></div>
+      <div class="col-md-4 mb-2"><input type="number" class="form-control" id="salaries" placeholder="Salaries"></div>
+      <div class="col-md-4 mb-2"><input type="number" class="form-control" id="transport" placeholder="Transport"></div>
+      <div class="col-md-4 mb-2"><input type="number" class="form-control" id="advertising" placeholder="Advertising"></div>
+      <div class="col-md-4 mb-2"><input type="number" class="form-control" id="bills" placeholder="Bills"></div>
+    </div>
+
+    <button class="btn btn-primary my-3" onclick="calculateNetProfit()">Calculate Net Profit</button>
+    <button class="btn btn-secondary mt-2" onclick="saveExpenses()">Save Expenses</button>
+
+    <h4><strong>Net Profit:</strong> $<span id="netProfit">0.00</span></h4>
+
+    <div class="mt-4">
+      <button class="btn btn-success" onclick="exportToExcel()">Export to Excel</button>
+      <button class="btn btn-danger" onclick="exportToPDF()">Export to PDF</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      query,
+      where,
+      Timestamp,
+      addDoc
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz2fsTVC7zZE1ZAw7lToe3wdScAMKzTYo",
+      authDomain: "iwb-iwc.firebaseapp.com",
+      projectId: "iwb-iwc",
+      storageBucket: "iwb-iwc.appspot.com",
+      messagingSenderId: "520008388872",
+      appId: "1:520008388872:web:3bfa0fe02638de36961cbd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let totalRevenue = 0;
+
+    async function loadRevenue() {
+      const snapshot = await getDocs(collection(db, "payments"));
+      totalRevenue = 0;
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        totalRevenue += parseFloat(data.totalPrice) || 0;
+      });
+
+      document.getElementById("totalRevenue").textContent = totalRevenue.toFixed(2);
+    }
+
+    window.filterByDate = async function () {
+      const startDate = new Date(document.getElementById("startDate").value);
+      const endDate = new Date(document.getElementById("endDate").value);
+
+      if (isNaN(startDate) || isNaN(endDate)) {
+        alert("Please select valid dates.");
+        return;
+      }
+
+      const q = query(
+        collection(db, "payments"),
+        where("createdAt", ">=", Timestamp.fromDate(startDate)),
+        where("createdAt", "<=", Timestamp.fromDate(new Date(endDate.getTime() + 86400000)))
+      );
+
+      const snapshot = await getDocs(q);
+      totalRevenue = 0;
+      snapshot.forEach(doc => {
+        totalRevenue += parseFloat(doc.data().totalPrice) || 0;
+      });
+
+      document.getElementById("totalRevenue").textContent = totalRevenue.toFixed(2);
+    };
+
+    window.calculateNetProfit = function () {
+      const capital = parseFloat(document.getElementById("capital").value) || 0;
+      const salaries = parseFloat(document.getElementById("salaries").value) || 0;
+      const transport = parseFloat(document.getElementById("transport").value) || 0;
+      const advertising = parseFloat(document.getElementById("advertising").value) || 0;
+      const bills = parseFloat(document.getElementById("bills").value) || 0;
+
+      const totalExpenses = capital + salaries + transport + advertising + bills;
+      const netProfit = totalRevenue - totalExpenses;
+
+      document.getElementById("netProfit").textContent = netProfit.toFixed(2);
+    };
+
+    window.saveExpenses = async function () {
+      const capital = parseFloat(document.getElementById("capital").value) || 0;
+      const salaries = parseFloat(document.getElementById("salaries").value) || 0;
+      const transport = parseFloat(document.getElementById("transport").value) || 0;
+      const advertising = parseFloat(document.getElementById("advertising").value) || 0;
+      const bills = parseFloat(document.getElementById("bills").value) || 0;
+
+      const totalExpenses = capital + salaries + transport + advertising + bills;
+      const netProfit = totalRevenue - totalExpenses;
+
+      const expenseData = {
+        capital: capital,
+        salaries: salaries,
+        transport: transport,
+        advertising: advertising,
+        bills: bills,
+        revenue: totalRevenue,
+        netProfit: netProfit,
+        createdAt: new Date()
+      };
+
+      // Save to Firestore
+      await addDoc(collection(db, "expenseReports"), expenseData);
+
+      // Update the UI to show the net profit
+      document.getElementById("netProfit").textContent = netProfit.toFixed(2);
+
+      alert("Expense record saved and net profit recorded!");
+    };
+
+    window.exportToExcel = function () {
+      const data = [
+        ["Income Statement"],
+        ["Total Revenue", totalRevenue.toFixed(2)],
+        ["Capital", document.getElementById("capital").value || "0"],
+        ["Salaries", document.getElementById("salaries").value || "0"],
+        ["Transport", document.getElementById("transport").value || "0"],
+        ["Advertising", document.getElementById("advertising").value || "0"],
+        ["Bills", document.getElementById("bills").value || "0"],
+        ["Net Profit", document.getElementById("netProfit").textContent]
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Income Statement");
+      XLSX.writeFile(wb, "income_statement.xlsx");
+    };
+
+    window.exportToPDF = function () {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Income Statement", 14, 16);
+      doc.autoTable({
+        head: [["Item", "Amount ($)"]],
+        body: [
+          ["Total Revenue", totalRevenue.toFixed(2)],
+          ["Capital", document.getElementById("capital").value || "0"],
+          ["Salaries", document.getElementById("salaries").value || "0"],
+          ["Transport", document.getElementById("transport").value || "0"],
+          ["Advertising", document.getElementById("advertising").value || "0"],
+          ["Bills", document.getElementById("bills").value || "0"],
+          ["Net Profit", document.getElementById("netProfit").textContent]
+        ],
+        startY: 22
+      });
+      doc.save("income_statement.pdf");
+    };
+
+    window.addEventListener("DOMContentLoaded", loadRevenue);
+  </script>
+</body>
+</html>

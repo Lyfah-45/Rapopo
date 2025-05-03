@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Client Chat Bot</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+      height: 90vh;
+      background: #fff;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: #4CAF50;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+    #authSection {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #authSection input,
+    #authSection button {
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    #startChatBtn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #chatSection {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #chatContainer {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      scroll-behavior: smooth;
+      max-height: 100%;
+    }
+
+    .input-area {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ddd;
+      background: white;
+    }
+
+    #messageInput {
+      flex: 1;
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+
+    #sendBtn {
+      margin-left: 10px;
+      padding: 0 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 10px 15px;
+      border-radius: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: #4CAF50;
+      color: white;
+    }
+
+    .message.bot, .message.admin {
+      align-self: flex-start;
+      background: #e5e5ea;
+      color: black;
+    }
+
+    .message-sender {
+      font-weight: bold;
+      font-size: 0.8em;
+      margin-bottom: 3px;
+    }
+
+    .message-time {
+      font-size: 0.7em;
+      opacity: 0.6;
+      margin-top: 3px;
+    }
+
+    #userEmail, #userName {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">Customer Support Chat</div>
+
+    <div id="authSection">
+      <input type="text" id="nameInput" placeholder="Your Name">
+      <input type="email" id="emailInput" placeholder="you@example.com" required>
+      <button id="startChatBtn">Start Chat</button>
+    </div>
+
+    <div id="chatSection">
+      <div id="chatContainer"></div>
+      <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Type your message...">
+        <button id="sendBtn">Send</button>
+      </div>
+    </div>
+
+    <div id="userEmail"></div>
+    <div id="userName"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDal_T5FxxrZHEOtXphcxlRUjjp9Sa7xCI",
+      authDomain: "iwbproject-2beee.firebaseapp.com",
+      projectId: "iwbproject-2beee",
+      storageBucket: "iwbproject-2beee.appspot.com",
+      messagingSenderId: "582945763103",
+      appId: "1:582945763103:web:c48ef37d635d2d0db24a2a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let allMessages = [];
+    let isAutoScrollEnabled = true;
+    let lastMessageId = null;
+
+    document.getElementById("startChatBtn").addEventListener("click", startChat);
+    document.getElementById("sendBtn").addEventListener("click", sendMessage);
+    document.getElementById("messageInput").addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function validateEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function startChat() {
+      const email = document.getElementById("emailInput").value.trim();
+      const name = document.getElementById("nameInput").value.trim() || "Customer";
+
+      if (!validateEmail(email)) return alert("Please enter a valid email.");
+
+      document.getElementById("userEmail").textContent = email;
+      document.getElementById("userName").textContent = name;
+      document.getElementById("authSection").style.display = "none";
+      document.getElementById("chatSection").style.display = "flex";
+
+      setupChatListener(email);
+    }
+
+    function setupChatListener(email) {
+      const q = query(
+        collection(db, "queries"), 
+        where("email", "==", email),
+        orderBy("timestamp") // Add ordering by timestamp
+      );
+      
+      onSnapshot(q, snapshot => {
+        allMessages = [];
+        snapshot.forEach(doc => {
+          const msg = {
+            id: doc.id,
+            ...doc.data(),
+            timestamp: doc.data().timestamp?.toDate?.() || new Date(),
+            resolvedAt: doc.data().resolvedAt?.toDate?.() || null,
+            responder: doc.data().responder || "Support Team"
+          };
+          allMessages.push(msg);
+        });
+        
+        // Sort messages by timestamp (just in case)
+        allMessages.sort((a, b) => a.timestamp - b.timestamp);
+        renderMessages();
+      });
+    }
+
+    function renderMessages() {
+      const container = document.getElementById("chatContainer");
+      container.innerHTML = "";
+      
+      allMessages.forEach(msg => {
+        // Always show user message
+        appendMessage("user", msg.name, msg.message, msg.timestamp);
+        
+        // Show response if available
+        if (msg.response) {
+          const responderType = msg.responder === "Bot" ? "bot" : "admin";
+          appendMessage(responderType, msg.responder, msg.response, msg.resolvedAt || msg.timestamp);
+        }
+      });
+      
+      if (isAutoScrollEnabled) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    function appendMessage(type, sender, text, time = new Date()) {
+      const container = document.getElementById("chatContainer");
+      const msg = document.createElement("div");
+      msg.className = `message ${type}`;
+      msg.innerHTML = `
+        <div class="message-sender">${sender}</div>
+        <div class="message-text">${text}</div>
+        <div class="message-time">${formatTimestamp(time)}</div>
+      `;
+      container.appendChild(msg);
+    }
+
+    function formatTimestamp(date) {
+      if (!(date instanceof Date)) {
+        date = date.toDate(); // Convert Firestore timestamp if needed
+      }
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function sendMessage() {
+      const email = document.getElementById("userEmail").textContent;
+      const name = document.getElementById("userName").textContent;
+      const message = document.getElementById("messageInput").value.trim();
+      if (!message) return;
+
+      const botReply = getBotReply(message);
+      const timestamp = new Date();
+
+      try {
+        if (botReply) {
+          // For bot responses
+          const docRef = await addDoc(collection(db, "queries"), {
+            email,
+            name,
+            message,
+            status: "complete",
+            timestamp,
+            response: botReply,
+            responder: "Bot",
+            resolvedAt: new Date()
+          });
+          lastMessageId = docRef.id;
+        } else {
+          // For messages needing admin response
+          const docRef = await addDoc(collection(db, "queries"), {
+            email,
+            name,
+            message,
+            status: "pending",
+            timestamp,
+            response: null,
+            responder: "Support Team",
+            resolvedAt: null
+          });
+          lastMessageId = docRef.id;
+          
+          // Show temporary message
+          appendMessage("admin", "Support Team", 'Our team will respond to: "' + message + '" shortly.', new Date());
+        }
+        
+        document.getElementById("messageInput").value = "";
+      } catch (err) {
+        console.error("Send failed:", err);
+        alert("Failed to send message.");
+      }
+    }
+
+    function getBotReply(message) {
+      const msg = message.toLowerCase();
+      
+      if (msg.includes("hello") || msg.includes("hi")) 
+        return "Hello! How can I assist you today?";
+      if (msg.includes("how are you")) 
+        return "I'm just a bot, but I'm functioning well! How can I help you?";
+      if (msg.includes("thank")) 
+        return "You're welcome! Is there anything else I can help with?";
+      if (msg.includes("bye") || msg.includes("goodbye")) 
+        return "Goodbye! Feel free to come back if you have more questions.";
+      
+      // Recycling-related questions
+      if (msg.includes("ram") || msg.includes("memory")) 
+        return "We accept all types of RAM for recycling: DDR, DDR2, DDR3, and DDR4. Please ensure they're clean and properly packaged.";
+      if (msg.includes("hard drive") || msg.includes("hdd") || msg.includes("ssd")) 
+        return "We recycle both HDDs and SSDs. For data security, we recommend wiping your drives before sending them, though we perform secure data erasure as part of our process.";
+      if (msg.includes("motherboard") || msg.includes("mainboard")) 
+        return "Motherboards are accepted for recycling. Please remove any batteries or hazardous components before sending.";
+      if (msg.includes("recycle") || msg.includes("dispose")) 
+        return "We accept most electronic components for recycling including computers, laptops, phones, and their components. What specific item are you looking to recycle?";
+      if (msg.includes("price") || msg.includes("cost")) 
+        return "Our recycling service is free for most items. For some components, we may offer buyback programs. Could you specify which items you're inquiring about?";
+      if (msg.includes("location") || msg.includes("where")) 
+        return "We have multiple drop-off locations. Our main facility is at 123 Green Way, Eco City. Would you like directions or information about other locations?";
+      
+      return null;
+    }
+  </script>
+</body>
+</html>
